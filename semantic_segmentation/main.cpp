@@ -4,21 +4,15 @@
 #include <torch/torch.h>
 #include <torch/script.h>
 
-#define HEIGHT 128
-#define WIDTH 240
+#define HEIGHT 256
+#define WIDTH 256
+#define N_CLASS 10
 
 std::vector<std::string> img_paths;
 
 void get_img_paths(std::string const &path, std::vector<std::string> &img_paths) {
   img_paths.clear();
   struct dirent *entry;
-
-  struct stat s;
-  lstat(path.c_str(), &s);
-  if (!S_ISDIR(s.st_mode)) {
-    fprintf(stderr, "Error: %s is not a valid directory!\n", path.c_str());
-    exit(1);
-  }
 
   DIR *dir = opendir(path.c_str());
   if (dir == nullptr) {
@@ -31,7 +25,7 @@ void get_img_paths(std::string const &path, std::vector<std::string> &img_paths)
       std::string name = entry->d_name;
       std::string ext = name.substr(name.find_last_of(".") + 1);
       if ((ext == "jpg") || (ext == "png")) {
-        img_paths.push_back(name);
+        img_paths.push_back(path + "/" + name);
       }
     }
   }
@@ -60,6 +54,7 @@ int main(){
 
   std::string img_dir_path = "../images";
   get_img_paths(img_dir_path, img_paths);
+  std::sort(img_paths.begin(), img_paths.end());
 
   for (int i = 0; i < img_paths.size(); i++){
     std::string img_path = img_paths.at(i);
@@ -74,11 +69,11 @@ int main(){
 
     pred = pred.argmax(1);
     pred = pred.squeeze();
-    pred = pred.mul(85).to(torch::kU8);
+    pred = pred.mul(int(255 / N_CLASS)).to(torch::kU8);
     pred = pred.to(torch::kCPU);
 
     cv::Mat pred_mat(cv::Size(WIDTH, HEIGHT), CV_8U, pred.data_ptr());
-    cv::resize(pred_mat, pred_mat, cv::Size(1920, 1080));
+    cv::resize(pred_mat, pred_mat, cv::Size(512, 512));
     cv::namedWindow("pred", 0);
     cv::imshow("pred", pred_mat);  // monochrome image
     cv::waitKey(0);
