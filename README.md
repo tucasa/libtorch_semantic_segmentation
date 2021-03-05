@@ -1,4 +1,4 @@
-# libtorch_semantic_segmentation
+# libtorch semantic segmentation
 
 このレポジトリはLibTorchでセマンティックセグメンテーション（推論のみ）を行うものです。
 
